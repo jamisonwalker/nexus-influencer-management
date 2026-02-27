@@ -57,6 +57,16 @@ async def test_env():
         "VENV_ACTIVE": "VIRTUAL_ENV" in os.environ
     }
 
+@app.get("/ping")
+async def ping():
+    """Simple ping endpoint to check if server is running"""
+    return {
+        "status": "ok",
+        "message": "Pong!",
+        "timestamp": time.time(),
+        "service": "Sarah-Engine"
+    }
+
 @app.get("/auth/login")
 async def login():
     """
