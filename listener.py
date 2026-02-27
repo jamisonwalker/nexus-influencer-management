@@ -42,6 +42,21 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "ok", "message": "Sarah-Engine is running"}
 
+@app.get("/test-env")
+async def test_env():
+    """Test endpoint to verify environment variables"""
+    import os
+    return {
+        "FANVUE_CLIENT_ID": os.getenv("FANVUE_CLIENT_ID") is not None,
+        "FANVUE_CLIENT_SECRET": os.getenv("FANVUE_CLIENT_SECRET") is not None,
+        "FANVUE_REDIRECT_URI": os.getenv("FANVUE_REDIRECT_URI") is not None,
+        "FANVUE_WEBHOOK_SECRET": os.getenv("FANVUE_WEBHOOK_SECRET") is not None,
+        "OPENROUTER_API_KEY": os.getenv("OPENROUTER_API_KEY") is not None,
+        "SUPABASE_DB_URL": os.getenv("SUPABASE_DB_URL") is not None,
+        "PYTHON_PATH": os.environ.get("PYTHONPATH"),
+        "VENV_ACTIVE": "VIRTUAL_ENV" in os.environ
+    }
+
 @app.get("/auth/login")
 async def login():
     """

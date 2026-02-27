@@ -32,8 +32,9 @@ class FanvueOAuth:
         self.client_secret = client_secret or os.getenv("FANVUE_CLIENT_SECRET")
         self.redirect_uri = redirect_uri or os.getenv("FANVUE_REDIRECT_URI")
         
-        if not all([self.client_id, self.redirect_uri]):
-            raise ValueError("Client ID and redirect URI are required")
+        # Don't raise an error if credentials are missing - handle it when methods are called
+        # This allows the module to be imported even if environment variables aren't loaded yet
+        self.initialized = all([self.client_id, self.redirect_uri])
     
     def generate_pkce_parameters(self):
         """
@@ -67,6 +68,9 @@ class FanvueOAuth:
         Returns:
             str: Authorization URL
         """
+        if not self.initialized:
+            raise ValueError("Client ID and redirect URI are required")
+        
         params = {
             'client_id': self.client_id,
             'redirect_uri': self.redirect_uri,
@@ -90,6 +94,9 @@ class FanvueOAuth:
         Returns:
             dict: Contains access_token, refresh_token, expires_in, etc.
         """
+        if not self.initialized:
+            raise ValueError("Client ID and redirect URI are required")
+            
         data = {
             'grant_type': 'authorization_code',
             'client_id': self.client_id,
@@ -116,6 +123,9 @@ class FanvueOAuth:
         Returns:
             dict: Contains new access_token, refresh_token, expires_in, etc.
         """
+        if not self.initialized:
+            raise ValueError("Client ID and redirect URI are required")
+            
         data = {
             'grant_type': 'refresh_token',
             'client_id': self.client_id,
