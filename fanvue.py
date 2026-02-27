@@ -154,6 +154,80 @@ class FanvueOAuth:
         
         return response.json()
     
+    def get_chats(self, access_token):
+        """
+        Get list of chats for authenticated user
+        
+        Args:
+            access_token (str): Access token from token exchange
+            
+        Returns:
+            dict: List of chats
+        """
+        headers = {'Authorization': f'Bearer {access_token}'}
+        response = requests.get(f"{self.API_BASE_URL}/chats", headers=headers)
+        response.raise_for_status()
+        
+        return response.json()
+    
+    def get_messages(self, access_token, user_uuid, page=1, size=15, mark_as_read=True):
+        """
+        Get messages from a chat
+        
+        Args:
+            access_token (str): Access token from token exchange
+            user_uuid (str): UUID of the user to get messages with
+            page (int): Page number (default: 1)
+            size (int): Number of messages per page (default: 15, max: 50)
+            mark_as_read (bool): Whether to mark messages as read (default: True)
+            
+        Returns:
+            dict: Paginated list of messages
+        """
+        headers = {'Authorization': f'Bearer {access_token}'}
+        params = {
+            'page': page,
+            'size': min(size, 50),
+            'markAsRead': str(mark_as_read).lower()
+        }
+        response = requests.get(
+            f"{self.API_BASE_URL}/chats/{user_uuid}/messages",
+            headers=headers,
+            params=params
+        )
+        response.raise_for_status()
+        
+        return response.json()
+    
+    def send_message(self, access_token, user_uuid, text):
+        """
+        Send a message to a user
+        
+        Args:
+            access_token (str): Access token from token exchange
+            user_uuid (str): UUID of the user to send message to
+            text (str): Text message content
+            
+        Returns:
+            dict: Response from Fanvue API
+        """
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json'
+        }
+        data = {
+            'userUuid': user_uuid,
+            'text': text
+        }
+        response = requests.post(
+            f"{self.API_BASE_URL}/chats",
+            headers=headers,
+            json=data
+        )
+        response.raise_for_status()
+        
+        return response.json()
+    
     def make_authenticated_request(self, endpoint, access_token, method='GET', data=None, params=None):
         """
         Make an authenticated API request to Fanvue

@@ -369,9 +369,9 @@ async def process_message(data: Dict[str, Any]):
         }
         
         resp = requests.post(
-            f"https://api.fanvue.com/chats/{chat_id}/messages",
+            "https://api.fanvue.com/chats",
             headers=headers,
-            json={"text": reply_text},
+            json={"userUuid": fan_id, "text": reply_text},
             timeout=30
         )
         
