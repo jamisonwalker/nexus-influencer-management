@@ -370,15 +370,10 @@ async def process_message(data: Dict[str, Any]):
         # 5. Send to Fanvue
         token = get_fanvue_token()
         try:
-            resp = fanvue_oauth.send_message(token, fan_id, reply_text)
+            fanvue_oauth.send_message(token, fan_id, reply_text)
             logger.info("✅ Response sent to Fanvue successfully")
         except Exception as e:
             logger.error(f"❌ Failed to reply: {str(e)}")
-        
-        if resp.status_code == 201:
-            logger.info("✅ Response sent to Fanvue successfully")
-        else:
-            logger.error(f"❌ Failed to reply: {resp.status_code} - {resp.text}")
             
     except Exception as e:
         logger.error(f"❌ Error processing message: {str(e)}")
