@@ -413,10 +413,42 @@ async def fanvue_webhook(request: Request, background_tasks: BackgroundTasks):
     
     return {"status": "ok"}
 
+async def ping_fanvue():
+    """Ping Fanvue API to check connection and confirm creator account"""
+    try:
+        token = get_fanvue_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Fanvue-API-Version": API_VERSION
+        }
+        
+        # Try to get user profile to confirm connection
+        response = requests.get(
+            "https://api.fanvue.com/users/me",
+            headers=headers,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            user_data = response.json()
+            logger.info(f"✅ Connected to Fanvue as {user_data.get('displayName', user_data.get('handle', 'User'))}")
+        else:
+            logger.warning(f"⚠️  Failed to get user profile: {response.status_code} - {response.text}")
+            
+    except Exception as e:
+        logger.error(f"❌ Error connecting to Fanvue: {str(e)}")
+
 if __name__ == "__main__":
     persona = config.get("persona", {})
     hobbies = config.get("hobbies", [])
     logger.info("🚀 Starting Sarah-Engine...")
     logger.info(f"Persona: {persona.get('name', 'Sarah')}, {persona.get('age', 24)} from {persona.get('city', 'Miami')}")
     logger.info(f"Hobbies: {', '.join(hobbies)}")
+    
+    # Ping Fanvue on startup
+    import threading
+    ping_thread = threading.Thread(target=ping_fanvue)
+    ping_thread.daemon = True
+    ping_thread.start()
+    
     uvicorn.run(app, host="0.0.0.0", port=8000)
