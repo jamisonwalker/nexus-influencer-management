@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "listener.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/webhooks/fanvue",
+      "dest": "listener.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "listener.py"
+    }
+  ],
+  "env": {
+    "PYTHON_VERSION": "3.10"
+  },
+  "regions": ["iad1"]
+}

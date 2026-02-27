@@ -1,0 +1,12 @@
+[build]
+  command = "pip install -r requirements.txt"
+  publish = "."
+  functions = "functions"
+
+[dev]
+  port = 5000
+
+[[redirects]]
+  from = "/webhooks/fanvue"
+  to = "/.netlify/functions/webhook-handler"
+  status = 200
