@@ -34,6 +34,11 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 app = FastAPI(title="Sarah-Engine", version="1.0.0")
 
+@app.get("/")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "ok", "message": "Sarah-Engine is running"}
+
 # --- Configurations ---
 SIGNING_SECRET = os.getenv("FANVUE_WEBHOOK_SECRET")
 CLIENT_ID = os.getenv("FANVUE_CLIENT_ID")
