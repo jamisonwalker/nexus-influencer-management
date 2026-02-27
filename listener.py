@@ -186,23 +186,21 @@ def get_fanvue_token() -> str:
 
     logger.info("🔑 Refreshing Fanvue OAuth Token...")
     try:
-        # NOTE: The current implementation uses client_credentials flow,
-        # but the Fanvue documentation recommends authorization code flow with PKCE
-        # for user authentication. This is kept for backward compatibility.
+        # Use the correct token endpoint from fanvue.py
         resp = requests.post(
-            "https://api.fanvue.com/oauth/token",
+            "https://auth.fanvue.com/oauth2/token",
             data={
                 "grant_type": "client_credentials",
                 "client_id": CLIENT_ID,
                 "client_secret": CLIENT_SECRET,
-                "scope": "chat:read chat:write"
+                "scope": "read:chat write:chat"
             },
             timeout=30
         )
         resp.raise_for_status()
         data = resp.json()
         token_cache["token"] = data["access_token"]
-        token_cache["expires_at"] = time.time() + data.get("expires_in", 86400) - 300
+        token_cache["expires_at"] = time.time() + data.get("expires_in", 3600) - 300  # Access token expires in 1 hour
         logger.info("✅ OAuth token refreshed successfully")
         return token_cache["token"]
     except Exception as e:
@@ -371,19 +369,11 @@ async def process_message(data: Dict[str, Any]):
 
         # 5. Send to Fanvue
         token = get_fanvue_token()
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "X-Fanvue-API-Version": API_VERSION,
-            "X-Fanvue-API-Key": os.getenv("FANVUE_API_KEY"),  # Required in 2026
-            "Content-Type": "application/json"
-        }
-        
-        resp = requests.post(
-            "https://api.fanvue.com/chats",
-            headers=headers,
-            json={"userUuid": fan_id, "text": reply_text},
-            timeout=30
-        )
+        try:
+            resp = fanvue_oauth.send_message(token, fan_id, reply_text)
+            logger.info("✅ Response sent to Fanvue successfully")
+        except Exception as e:
+            logger.error(f"❌ Failed to reply: {str(e)}")
         
         if resp.status_code == 201:
             logger.info("✅ Response sent to Fanvue successfully")

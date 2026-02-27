@@ -148,7 +148,10 @@ class FanvueOAuth:
         Returns:
             dict: User profile data
         """
-        headers = {'Authorization': f'Bearer {access_token}'}
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'X-Fanvue-API-Version': '2025-06-26'
+        }
         response = requests.get(f"{self.API_BASE_URL}/users/me", headers=headers)
         response.raise_for_status()
         
@@ -164,7 +167,10 @@ class FanvueOAuth:
         Returns:
             dict: List of chats
         """
-        headers = {'Authorization': f'Bearer {access_token}'}
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'X-Fanvue-API-Version': '2025-06-26'
+        }
         response = requests.get(f"{self.API_BASE_URL}/chats", headers=headers)
         response.raise_for_status()
         
@@ -184,7 +190,10 @@ class FanvueOAuth:
         Returns:
             dict: Paginated list of messages
         """
-        headers = {'Authorization': f'Bearer {access_token}'}
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'X-Fanvue-API-Version': '2025-06-26'
+        }
         params = {
             'page': page,
             'size': min(size, 50),
@@ -199,28 +208,38 @@ class FanvueOAuth:
         
         return response.json()
     
-    def send_message(self, access_token, user_uuid, text):
+    def send_message(self, access_token, user_uuid, text, media_uuids=None, price=None, template_uuid=None):
         """
-        Send a message to a user
+        Send a message to a user in an existing chat conversation
         
         Args:
             access_token (str): Access token from token exchange
             user_uuid (str): UUID of the user to send message to
             text (str): Text message content
+            media_uuids (list): Optional list of media UUIDs to attach
+            price (float): Optional price for pay-to-view content
+            template_uuid (str): Optional template UUID to use
             
         Returns:
             dict: Response from Fanvue API
         """
         headers = {
             'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Fanvue-API-Version': '2025-06-26'
         }
         data = {
-            'userUuid': user_uuid,
             'text': text
         }
+        if media_uuids:
+            data['mediaUuids'] = media_uuids
+        if price is not None:
+            data['price'] = price
+        if template_uuid:
+            data['templateUuid'] = template_uuid
+            
         response = requests.post(
-            f"{self.API_BASE_URL}/chats",
+            f"{self.API_BASE_URL}/chats/{user_uuid}/message",
             headers=headers,
             json=data
         )
@@ -243,7 +262,10 @@ class FanvueOAuth:
             dict: Response data from Fanvue API
         """
         url = f"{self.API_BASE_URL}{endpoint}"
-        headers = {'Authorization': f'Bearer {access_token}'}
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'X-Fanvue-API-Version': '2025-06-26'
+        }
         
         response = requests.request(
             method,
