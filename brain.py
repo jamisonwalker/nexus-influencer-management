@@ -110,8 +110,12 @@ def extract_fan_name(fan_message: str, fan_lore: str, chat_history: List[Dict[st
         if match:
             return match.group(1).capitalize()
     
-    # Look for name in fan lore
+    # Look for name in fan lore (specifically "Fan Name: [Name]")
     if fan_lore:
+        lore_match = re.search(r"Fan Name: ([^\n]+)", fan_lore)
+        if lore_match:
+            return lore_match.group(1).strip().capitalize()
+            
         lore_lower = fan_lore.lower()
         for pattern in name_patterns:
             match = re.search(pattern, lore_lower)
