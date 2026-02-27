@@ -193,7 +193,7 @@ def generate_lore_update(fan_message: str, previous_lore: str = "") -> str:
         }
         
         payload = {
-            "model": "arcee-ai/trinity-large-preview:free",
+            "model": "aion-labs/aion-2.0",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": "Analyze this message for important fan information to remember"}
@@ -306,14 +306,12 @@ def generate_sarah_response(fan_message: str, fan_lore: str = "", chat_history: 
         }
 
         payload = {
-            # NOTE: Using Trinity's free model for testing purposes
-            # TODO: Return to aion-labs/aion-2.0 when credits are available
-            "model": "arcee-ai/trinity-large-preview:free",
+            "model": "aion-labs/aion-2.0",
             "messages": formatted_messages,
             "temperature": 0.9,  # Higher for more 'wild' and creative responses
             "top_p": 0.95,
             "repetition_penalty": 1.1,
-            "max_tokens": 2000,  # Reduced to fit within free tier limits
+            "max_tokens": 2000,
             "provider": {"allow_fallbacks": False}
         }
 
