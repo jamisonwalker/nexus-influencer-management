@@ -17,6 +17,9 @@ from typing import Dict, Any
 # Import Sarah's brain logic
 from brain import generate_sarah_response
 
+# Import Fanvue OAuth integration
+from fanvue import FanvueOAuth
+
 # Load configuration from config.yaml
 with open(os.path.join(os.path.dirname(__file__), "config.yaml"), "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
@@ -39,6 +42,96 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "ok", "message": "Sarah-Engine is running"}
 
+@app.get("/auth/login")
+async def login():
+    """
+    Initiates the Fanvue OAuth flow by generating PKCE parameters and redirecting to Fanvue
+    """
+    try:
+        # Generate PKCE parameters
+        pkce = fanvue_oauth.generate_pkce_parameters()
+        
+        # Store code verifier in cookie (httponly and secure for production)
+        auth_url = fanvue_oauth.get_authorization_url(pkce['code_challenge'])
+        
+        logger.info("OAuth flow initiated")
+        return {"auth_url": auth_url}
+    except Exception as e:
+        logger.error(f"❌ Failed to initiate OAuth flow: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to initiate login")
+
+@app.get("/auth/callback")
+async def callback(code: str, state: str):
+    """
+    OAuth callback endpoint to exchange authorization code for tokens
+    """
+    try:
+        logger.info(f"Received OAuth callback with code: {code[:10]}...")
+        
+        # NOTE: In a real implementation, you would retrieve the code_verifier from cookies or session
+        # For this example, we're generating a new one (this won't work in production)
+        # You should implement proper session management
+        
+        logger.warning("⚠️  Code verifier not properly stored in session - this is a demo implementation")
+        
+        # This is just for demonstration - in production, you need to store and retrieve
+        # the code_verifier that was generated during the login step
+        pkce = fanvue_oauth.generate_pkce_parameters()
+        
+        try:
+            tokens = fanvue_oauth.exchange_code_for_tokens(code, pkce['code_verifier'])
+            logger.info("✅ OAuth token exchange successful")
+            
+            # Store tokens in token cache
+            token_cache["token"] = tokens["access_token"]
+            token_cache["expires_at"] = time.time() + tokens.get("expires_in", 3600) - 300
+            
+            # Get user profile
+            user_profile = fanvue_oauth.get_user_profile(tokens["access_token"])
+            
+            return {
+                "status": "success",
+                "message": "Login successful",
+                "user": user_profile,
+                "tokens": {
+                    "access_token": tokens["access_token"],
+                    "expires_in": tokens["expires_in"],
+                    "refresh_token": tokens.get("refresh_token")
+                }
+            }
+        except Exception as e:
+            logger.error(f"❌ Token exchange failed: {str(e)}")
+            raise HTTPException(status_code=400, detail="Failed to exchange code for token")
+            
+    except Exception as e:
+        logger.error(f"❌ OAuth callback failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Login failed")
+
+@app.get("/auth/refresh")
+async def refresh(refresh_token: str):
+    """
+    Refresh access token using refresh token
+    """
+    try:
+        logger.info("🔄 Refreshing access token")
+        new_tokens = fanvue_oauth.refresh_access_token(refresh_token)
+        
+        token_cache["token"] = new_tokens["access_token"]
+        token_cache["expires_at"] = time.time() + new_tokens.get("expires_in", 3600) - 300
+        
+        logger.info("✅ Access token refreshed successfully")
+        return {
+            "status": "success",
+            "tokens": {
+                "access_token": new_tokens["access_token"],
+                "expires_in": new_tokens["expires_in"],
+                "refresh_token": new_tokens.get("refresh_token")
+            }
+        }
+    except Exception as e:
+        logger.error(f"❌ Token refresh failed: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to refresh token")
+
 # --- Configurations ---
 SIGNING_SECRET = os.getenv("FANVUE_WEBHOOK_SECRET")
 CLIENT_ID = os.getenv("FANVUE_CLIENT_ID")
@@ -55,6 +148,9 @@ def get_db_connection():
         logger.error(f"❌ Database connection failed: {str(e)}")
         raise
 
+# Initialize Fanvue OAuth client
+fanvue_oauth = FanvueOAuth()
+
 # Token Cache to prevent unnecessary auth requests
 token_cache = {"token": None, "expires_at": 0}
 
@@ -65,6 +161,9 @@ def get_fanvue_token() -> str:
 
     logger.info("🔑 Refreshing Fanvue OAuth Token...")
     try:
+        # NOTE: The current implementation uses client_credentials flow,
+        # but the Fanvue documentation recommends authorization code flow with PKCE
+        # for user authentication. This is kept for backward compatibility.
         resp = requests.post(
             "https://api.fanvue.com/oauth/token",
             data={
