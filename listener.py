@@ -264,13 +264,13 @@ async def update_fan_lore(fan_id: str, incoming_text: str, fan_name: str, previo
 async def process_message(data: Dict[str, Any]):
     """Process incoming message from Fanvue"""
     try:
-        # Extract data from the event (handle different data structures)
-        event_data = data.get('data', data)
+        # Extract data from the event (Fanvue webhook format)
+        logger.info(f"Processing webhook data: {data}")
         
-        fan_id = event_data.get('sender', {}).get('uuid') or event_data.get('userId')
-        incoming_text = event_data.get('message', {}).get('text') or event_data.get('text')
-        msg_id = event_data.get('message', {}).get('uuid') or event_data.get('id')
-        chat_id = event_data.get('chat', {}).get('uuid') or event_data.get('chatId')
+        fan_id = data.get('sender', {}).get('uuid')
+        incoming_text = data.get('message', {}).get('text')
+        msg_id = data.get('messageUuid') or data.get('message', {}).get('uuid')
+        chat_id = None  # Fanvue webhook doesn't provide chat UUID directly
         
         # Log the event data for debugging
         logger.info(f"Event data: {data}")
@@ -401,9 +401,11 @@ async def fanvue_webhook(request: Request, background_tasks: BackgroundTasks):
 
     event_data = await request.json()
     
-    # Only process actual message events
-    if event_data.get("type") in ["message.received", "message.created", "message.recieved"]:
-        logger.info(f"Received message event: {event_data.get('id')}")
+    logger.info(f"Received webhook event: {event_data}")
+    
+    # Process message received event (Fanvue webhook format)
+    if "message" in event_data and "sender" in event_data:
+        logger.info(f"Processing message from fan {event_data.get('sender', {}).get('uuid')}")
         background_tasks.add_task(process_message, event_data)
     
     return {"status": "ok"}
